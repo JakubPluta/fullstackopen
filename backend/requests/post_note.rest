@@ -1,0 +1,8 @@
+POST http://localhost:3001/api/notes
+content-type: application/json
+Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiaWQiOiI2MWRmMzYwMWJjNDA0MzQ4ZWNkZjkwMDEiLCJpYXQiOjE2NDIwMTk2NTgsImV4cCI6MTY0MjAyMzI1OH0.0ne6dj0efBG4hdfuGkiZqFuoCBgYdnFIB5k1rviBOLQ
+
+{
+    "content": "I am cool",
+    "important": true
+}
