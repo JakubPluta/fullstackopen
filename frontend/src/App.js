@@ -1,35 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Note from "./components/Note";
 import "./index.css";
 import noteService from "./services/notes";
 import Notification from "./components/Notification";
 import loginService from "./services/login";
-import axios from "axios";
-
-const Footer = () => {
-  const footerStyle = {
-    color: "green",
-    fontStyle: "italic",
-    fontSize: 16,
-  };
-  return (
-    <div style={footerStyle}>
-      <br />
-      <em>
-        Note app, Department of Computer Science, University of Helsinki 2021
-      </em>
-    </div>
-  );
-};
+import LoginForm from "./components/Login";
+import Togglable from "./components/Togglable";
+import NoteForm from "./components/NoteForm";
+import Footer from "./components/Footer";
 
 const App = () => {
   const [notes, setNotes] = useState([]);
-  const [newNote, setNewNote] = useState("");
   const [showAll, setShowAll] = useState(true);
-  const [error, setError] = useState("some error happened");
+  const [error, setError] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
+
+  const noteFormRef = useRef();
 
   useEffect(() => {
     const loggedUser = window.localStorage.getItem("loggedUser");
@@ -65,22 +53,20 @@ const App = () => {
     });
   }, []);
 
-  const addNote = (event) => {
-    event.preventDefault();
-    const noteObject = {
-      content: newNote,
-      date: new Date().toISOString(),
-      important: Math.random() > 0.5,
-    };
-
+  const addNote = (noteObject) => {
+    noteFormRef.current.toggleVisibility();
     noteService.create(noteObject).then((returnedNote) => {
       setNotes(notes.concat(returnedNote));
-      setNewNote("");
     });
   };
 
-  const handleNoteChange = (event) => {
-    setNewNote(event.target.value);
+  const handleRemoveNote = (note) => {
+    if (window.confirm(`Delete ${note.conent} ?`)) {
+      noteService.remove(note.id).then((reponse) => {
+        setNotes(notes.filter((n) => n.id !== note.id));
+        console.log(`Deleted ${note.content} with id ${note.id}`);
+      });
+    }
   };
 
   const toggleImportanceOff = (id) => {
@@ -106,48 +92,36 @@ const App = () => {
   const notesToShow = showAll ? notes : notes.filter((note) => note.important);
 
   const loginForm = () => (
-    <form onSubmit={handleLogin}>
-      <div>
-        username
-        <input
-          type="text"
-          value={username}
-          name="Username"
-          onChange={({ target }) => setUsername(target.value)}
-        />
-      </div>
-      <div>
-        password
-        <input
-          type="password"
-          value={password}
-          name="Password"
-          onChange={({ target }) => setPassword(target.value)}
-        />
-      </div>
-      <button type="submit">login</button>
-    </form>
+    <Togglable buttonLabel="log in">
+      <LoginForm
+        username={username}
+        password={password}
+        handleUsernameChange={({ target }) => setUsername(target.value)}
+        handlePasswordChange={({ target }) => setPassword(target.value)}
+        handleLoginForm={handleLogin}
+      />
+    </Togglable>
   );
 
   const noteForm = () => (
-    <form onSubmit={addNote}>
-      <input value={newNote} onChange={handleNoteChange} />
-      <button type="submit">save</button>
-    </form>
+    <Togglable buttonLabel="new note" ref={noteFormRef}>
+      <NoteForm createNote={addNote} />
+    </Togglable>
   );
 
   return (
     <div>
       <h1>Notes</h1>
-      <Notification message={error} />
+      {error ? <Notification message={error} /> : null}
       {user === null ? (
         loginForm()
       ) : (
         <div>
-          <p>{user.name} logged-in</p>
+          <p>{user.name} logged in</p>
           {noteForm()}
         </div>
       )}
+
       <div>
         <button onClick={() => setShowAll(!showAll)}>
           show {showAll ? "important" : "all"}
@@ -159,6 +133,7 @@ const App = () => {
             key={note.id}
             note={note}
             toggleImportance={() => toggleImportanceOff(note.id)}
+            deleteButton={() => handleRemoveNote(note)}
           />
         ))}
       </ul>
